@@ -1,0 +1,76 @@
+# ==== Python ==========================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg
+*.egg-info/
+.eggs/
+build/
+dist/
+sdist/
+wheels/
+pip-wheel-metadata/
+*.whl
+
+# Compiled extension modules (the pyo3 module is built into a venv or
+# target/, never committed — see the Rust section for target/).
+*.so
+*.pyd
+*.dylib
+
+# Virtual environments
+.venv/
+venv/
+env/
+.env
+.python-version
+
+# Test / type / lint / coverage caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.hypothesis/
+
+# ==== Rust / native (native/) =========================================
+# Build output for the MIH crate + maturin wheels.
+target/
+**/*.rs.bk
+*.pdb
+
+# Cargo.lock IS tracked: this crate is a deployable Python extension /
+# binary (cdylib + bench bin), not a reusable library published to
+# crates.io, so a pinned lockfile gives reproducible builds. (If it is
+# ever split into a library others depend on, ignore it instead.)
+!native/Cargo.lock
+
+# maturin build metadata
+.maturin/
+
+# ==== Data assets (never committed — generated or downloaded) =========
+# Library-signature stores + their metadata sidecars.
+*.tfls
+*.tfls.idx.json
+# Prepared twinflame records produced while building/testing the store.
+*.tfr
+*.tfr.json
+# Offline scraper working dirs (Phase 1): downloaded artifacts + DEX.
+/libsigs-cache/
+/libsigs-store/
+*.aar
+*.jar
+*.dex
+
+# ==== OS / editor cruft ===============================================
+.DS_Store
+Thumbs.db
+*~
+*.swp
+*.swo
+.idea/
+.vscode/

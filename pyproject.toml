@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "twinflame-libsigs"
+version = "0.0.1"
+description = "Known-library signature store for twinflame (offline builder + mmap query reader)"
+requires-python = ">=3.11"
+# Depends on twinflame for signature *content* (compute_signature + the
+# SIGNATURE_STAMP the store is validated against). The query reader itself uses
+# only the stdlib (mmap/struct) so it stays light on the diff hot path.
+dependencies = [
+    "twinflame",
+]
+
+[project.optional-dependencies]
+# Offline builder only: Maven/gmaven scraping + d8 to turn .aar/.jar into DEX.
+# Never pulled in by the query path or by twinflame core.
+build = [
+    "requests",
+]
+test = [
+    "pytest",
+]
+
+[project.scripts]
+twinflame-libsigs = "twinflame_libsigs.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
