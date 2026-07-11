@@ -53,9 +53,11 @@ target/
 .maturin/
 
 # ==== Data assets (never committed — generated or downloaded) =========
-# Library-signature stores + their metadata sidecars.
+# Library-signature stores / catalogue packs + their metadata sidecars.
 *.tfls
 *.tfls.idx.json
+*.tflp
+*.idx.json
 # Prepared twinflame records produced while building/testing the store.
 *.tfr
 *.tfr.json

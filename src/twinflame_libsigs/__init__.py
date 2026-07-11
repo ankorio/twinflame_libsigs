@@ -12,9 +12,11 @@ scraper / d8 toolchain that feeds the builder is offline-only and never enters
 the twinflame core distribution. See the storage design study.
 """
 
+from .detect import Detection, LibraryDetector
 from .layout import Header
 from .store import LibSigStore, StaleStoreError
 from .strings import StringAnchorIndex
 
-__all__ = ["LibSigStore", "StaleStoreError", "Header", "StringAnchorIndex"]
+__all__ = ["LibSigStore", "StaleStoreError", "Header", "StringAnchorIndex",
+           "LibraryDetector", "Detection"]
 __version__ = "0.0.1"

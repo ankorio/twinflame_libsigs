@@ -18,9 +18,15 @@ signature scan otherwise, so the detector is usable without the Rust toolchain.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
 from .strings import StringAnchorIndex
+
+# The corpus-validated operating point (findings: radius 4 + min-instr 20 ->
+# P 0.83 / R 0.65, all three tiers contributing). Radius is applied here at
+# query time; the min-instr filter is applied when the pack is *built*.
+DEFAULT_RADIUS = 4
 
 try:  # native exact multi-index Hamming store
     import tfls_mih  # type: ignore
@@ -49,19 +55,21 @@ class _BruteStore:
 
 
 class LibraryDetector:
-    __slots__ = ("_sig_store", "_strings", "_radius")
+    __slots__ = ("_sig_store", "_strings", "_radius", "_payloads")
 
-    def __init__(self, sig_store, strings: StringAnchorIndex, radius: int):
+    def __init__(self, sig_store, strings: StringAnchorIndex, radius: int,
+                 payloads: Optional[Dict[str, dict]] = None):
         self._sig_store = sig_store
         self._strings = strings
         self._radius = radius
+        self._payloads = payloads or {}
 
     @classmethod
     def build(
         cls,
         entries: Iterable[Tuple[int, int, Sequence[str]]],
         *,
-        radius: int = 8,
+        radius: int = DEFAULT_RADIUS,
     ) -> "LibraryDetector":
         """`entries` = (payload_id, signature, class strings)."""
         sig_entries: List[Tuple[int, int]] = []
@@ -77,6 +85,37 @@ class LibraryDetector:
         else:
             sig_store = _BruteStore(sig_entries)
         return cls(sig_store, StringAnchorIndex.build(str_entries), radius)
+
+    @classmethod
+    def from_pack(
+        cls,
+        path: str | Path,
+        *,
+        radius: int = DEFAULT_RADIUS,
+        expect_stamp: Optional[str] = None,
+    ) -> "LibraryDetector":
+        """Load a catalogue pack (`pack.py`) and build the in-memory stores.
+        Pass twinflame's current `SIGNATURE_STAMP` as `expect_stamp` to refuse
+        a stale pack (`StaleStoreError`) instead of mismatched distances."""
+        from .pack import read_pack
+        entries, payloads, _ = read_pack(path, expect_stamp=expect_stamp)
+        det = cls.build(entries, radius=radius)
+        det._payloads = payloads
+        return det
+
+    def resolve(self, d: Detection) -> Optional[dict]:
+        """Sidecar metadata for a detection: {coord, ranges, fqcn}; None when
+        the detector was built without a pack sidecar."""
+        return self._payloads.get(str(d.payload_id))
+
+    def label(self, d: Detection) -> str:
+        """Provenance label for a detection: `library:<coord>@<ranges>`, or a
+        bare payload reference when no sidecar is loaded."""
+        m = self.resolve(d)
+        if m is None:
+            return f"library:payload/{d.payload_id}"
+        ranges = ",".join(m.get("ranges", ())) or "?"
+        return f"library:{m['coord']}@{ranges}"
 
     def detect(self, sig: int, strings: Sequence[str]) -> Optional[Detection]:
         """Best library match for one app class, tried tier by tier."""
