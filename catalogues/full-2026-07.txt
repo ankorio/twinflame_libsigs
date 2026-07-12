@@ -1,0 +1,125 @@
+# Full catalogue, 2026-07: built-in seed + the ApkDiffer-corpus inventory
+# (bench_results/scrape_seed_libraries.json, 81 resolvable of 83 roots) + the
+# modern-app gap the corpus list misses (compose, dagger/hilt, coil, firebase).
+# Two corpus entries are non-resolvable placeholders and are omitted:
+# "<various com.github.* -> JitPack>" and "(bundled in osmdroid/osmbonuspack)".
+#
+# Scrape: twinflame-libsigs scrape -c catalogues/full-2026-07.txt -C libsigs-cache
+
+# --- built-in seed (kept here so this file is the complete list) -----------
+androidx.appcompat:appcompat                       google-maven
+androidx.core:core                                 google-maven
+androidx.fragment:fragment                         google-maven
+androidx.recyclerview:recyclerview                 google-maven
+androidx.constraintlayout:constraintlayout        google-maven
+androidx.lifecycle:lifecycle-runtime               google-maven
+androidx.lifecycle:lifecycle-viewmodel             google-maven
+androidx.room:room-runtime                         google-maven
+androidx.work:work-runtime                         google-maven
+com.google.android.material:material               google-maven
+org.jetbrains.kotlin:kotlin-stdlib                 maven-central
+org.jetbrains.kotlinx:kotlinx-coroutines-core      maven-central
+org.jetbrains.kotlinx:kotlinx-coroutines-android   maven-central
+com.squareup.okhttp3:okhttp                        maven-central
+com.squareup.okio:okio                             maven-central
+com.squareup.retrofit2:retrofit                    maven-central
+com.squareup.picasso:picasso                       maven-central
+com.squareup.moshi:moshi                           maven-central
+com.google.code.gson:gson                          maven-central
+com.fasterxml.jackson.core:jackson-databind        maven-central
+com.github.bumptech.glide:glide                    maven-central
+com.airbnb.android:lottie                          maven-central
+io.reactivex.rxjava2:rxjava                        maven-central
+io.reactivex.rxjava3:rxjava                        maven-central
+org.greenrobot:eventbus                            maven-central
+com.jakewharton.timber:timber                      maven-central
+com.google.guava:guava                             maven-central
+
+# --- legacy support era (what the older corpus apps actually bundle) -------
+com.android.support:support-v4                     google-maven
+com.android.support:support-compat                 google-maven
+com.android.support:appcompat-v7                   google-maven
+com.android.support:design                         google-maven
+com.android.support:support-v13                    google-maven
+com.android.support:multidex                       google-maven
+android.arch.lifecycle:runtime                     google-maven
+
+# --- androidx plumbing (corpus inventory) -----------------------------------
+androidx.versionedparcelable:versionedparcelable   google-maven
+androidx.arch.core:core-runtime                    google-maven
+androidx.collection:collection                     google-maven
+androidx.customview:customview                     google-maven
+androidx.vectordrawable:vectordrawable             google-maven
+androidx.viewpager:viewpager                       google-maven
+androidx.drawerlayout:drawerlayout                 google-maven
+androidx.cursoradapter:cursoradapter               google-maven
+androidx.loader:loader                             google-maven
+androidx.interpolator:interpolator                 google-maven
+androidx.annotation:annotation                     google-maven
+androidx.coordinatorlayout:coordinatorlayout       google-maven
+androidx.activity:activity                         google-maven
+androidx.savedstate:savedstate                     google-maven
+androidx.legacy:legacy-support-v4                  google-maven
+androidx.localbroadcastmanager:localbroadcastmanager google-maven
+androidx.swiperefreshlayout:swiperefreshlayout     google-maven
+androidx.slidingpanelayout:slidingpanelayout       google-maven
+androidx.documentfile:documentfile                 google-maven
+androidx.cardview:cardview                         google-maven
+androidx.print:print                               google-maven
+androidx.transition:transition                     google-maven
+androidx.media:media                               google-maven
+androidx.asynclayoutinflater:asynclayoutinflater   google-maven
+androidx.preference:preference                     google-maven
+androidx.viewpager2:viewpager2                     google-maven
+androidx.dynamicanimation:dynamicanimation         google-maven
+androidx.tracing:tracing                           google-maven
+androidx.concurrent:concurrent-futures             google-maven
+androidx.multidex:multidex                         google-maven
+androidx.sqlite:sqlite                             google-maven
+androidx.browser:browser                           google-maven
+androidx.databinding:viewbinding                   google-maven
+androidx.paging:paging-runtime                     google-maven
+androidx.emoji2:emoji2                             google-maven
+androidx.navigation:navigation-runtime             google-maven
+androidx.exifinterface:exifinterface               google-maven
+androidx.window:window                             google-maven
+
+# --- third-party (corpus inventory) ------------------------------------------
+org.osmdroid:osmdroid-android                      maven-central
+org.apache.commons:commons-lang3                   maven-central
+org.metalev.multitouch:controller                  jitpack
+org.slf4j:slf4j-api                                maven-central
+de.hdodenhof:circleimageview                       maven-central
+com.github.PhilJay:MPAndroidChart                  jitpack
+com.nineoldandroids:library                        maven-central
+com.caverock:androidsvg                            maven-central
+com.squareup.leakcanary:leakcanary-android         maven-central
+com.mikepenz:materialdrawer                        maven-central
+com.google.android.gms:play-services-base          google-maven
+org.conscrypt:conscrypt-android                    maven-central
+com.google.zxing:core                              maven-central
+org.commonmark:commonmark                          maven-central
+com.google.android.exoplayer:exoplayer             google-maven
+
+# --- modern-app gap (our own eval apps; compose measured as the biggest) ----
+androidx.compose.ui:ui                             google-maven
+androidx.compose.foundation:foundation             google-maven
+androidx.compose.runtime:runtime                   google-maven
+androidx.compose.material:material                 google-maven
+androidx.compose.material3:material3               google-maven
+androidx.compose.animation:animation               google-maven
+com.google.dagger:dagger                           maven-central
+com.google.dagger:hilt-android                     maven-central
+io.coil-kt:coil                                    maven-central
+org.jetbrains.kotlinx:kotlinx-serialization-json   maven-central
+androidx.datastore:datastore                       google-maven
+com.google.firebase:firebase-common                google-maven
+com.google.firebase:firebase-messaging             google-maven
+
+# --- JSON/serialization stacks (Jackson 2.x siblings, Jackson 1.x, Avro) ----
+com.fasterxml.jackson.core:jackson-core            maven-central
+com.fasterxml.jackson.core:jackson-annotations     maven-central
+com.fasterxml.jackson.datatype:jackson-datatype-jsr310  maven-central
+org.apache.avro:avro                               maven-central
+org.codehaus.jackson:jackson-core-asl              maven-central
+org.codehaus.jackson:jackson-mapper-asl            maven-central

@@ -4,14 +4,17 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "twinflame-libsigs"
-version = "0.0.1"
+version = "0.1.0b1"
 description = "Known-library signature store for twinflame (offline builder + mmap query reader)"
+readme = "README.md"
 requires-python = ">=3.11"
 # Depends on twinflame for signature *content* (compute_signature + the
 # SIGNATURE_STAMP the store is validated against). The query reader itself uses
 # only the stdlib (mmap/struct) so it stays light on the diff hot path.
 dependencies = [
-    "twinflame",
+    # 0.3.0b1 is the first twinflame with the --libsigs integration and the
+    # SIGNATURE_STAMP this store's packs are validated against.
+    "twinflame>=0.3.0b1",
 ]
 
 [project.optional-dependencies]
@@ -26,6 +29,10 @@ test = [
 
 [project.scripts]
 twinflame-libsigs = "twinflame_libsigs.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/ankorio/twinflame_libsigs"
+twinflame = "https://github.com/ankorio/twinflame"
 
 [tool.setuptools.packages.find]
 where = ["src"]
