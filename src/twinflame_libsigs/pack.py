@@ -74,6 +74,16 @@ def write_pack(
     sidecar_path(path).write_text(json.dumps(doc))
 
 
+def read_meta(path: str | Path) -> dict:
+    """The build `meta` dict from a pack's sidecar, without reading the pack
+    itself — cheap enough to classify every pack in a directory. `{}` when the
+    sidecar is missing or carries no meta."""
+    sc = sidecar_path(path)
+    if not sc.exists():
+        return {}
+    return json.loads(sc.read_text()).get("meta", {}) or {}
+
+
 def read_pack(
     path: str | Path, *, expect_stamp: Optional[str] = None,
 ) -> Tuple[List[Entry], Dict[str, dict], str]:
