@@ -1,11 +1,13 @@
 """Catalogue-pack pipeline: dedup -> ranges -> pack roundtrip -> detector."""
 
+import json
+
 import pytest
 
 from twinflame_libsigs.dedup import (
     ClassSig, assign_payload_ids, compact_ranges, dedup_by_signature)
 from twinflame_libsigs.detect import LibraryDetector
-from twinflame_libsigs.pack import read_pack, sidecar_path, write_pack
+from twinflame_libsigs.pack import read_meta, read_pack, sidecar_path, write_pack
 from twinflame_libsigs.store import StaleStoreError
 
 OKHTTP = "com.squareup.okhttp3:okhttp"
@@ -107,6 +109,31 @@ def test_pack_roundtrips_mutf8_surrogate_strings(tmp_path):
     write_pack(path, [(0, _sig(7), (weird,))], {"0": {}}, sig_stamp="s")
     entries, _, _ = read_pack(path)
     assert entries[0][2] == (weird,)
+
+
+def test_read_meta_roundtrip_and_missing_sidecar(tmp_path):
+    path, _, _ = _pack_fixture(tmp_path)
+    assert read_meta(path) == {"coords": [OKHTTP]}
+    sidecar_path(path).unlink()
+    assert read_meta(path) == {}
+
+
+def test_pack_rejects_mismatched_sidecar(tmp_path):
+    # A sidecar from a different build resolves payload ids to the wrong
+    # coordinates; read_pack must refuse the pair rather than mislabel.
+    path, _, _ = _pack_fixture(tmp_path, stamp="stamp-a")
+    stale = sidecar_path(path)
+    doc = json.loads(stale.read_text())
+    for tamper in ({"sig_stamp": "stamp-old"}, {"n_entries": 999}):
+        stale.write_text(json.dumps(doc | tamper))
+        with pytest.raises(ValueError, match="installed together"):
+            read_pack(path)
+    stale.write_text(json.dumps(doc))
+    read_pack(path)  # restored pair is fine
+
+    stale.unlink()   # a *missing* sidecar stays tolerated (labels degrade)
+    _, payloads, _ = read_pack(path)
+    assert payloads == {}
 
 
 def test_pack_rejects_sparse_payload_ids(tmp_path):

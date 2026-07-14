@@ -74,6 +74,16 @@ def write_pack(
     sidecar_path(path).write_text(json.dumps(doc))
 
 
+def read_meta(path: str | Path) -> dict:
+    """The build `meta` dict from a pack's sidecar, without reading the pack
+    itself — cheap enough to classify every pack in a directory. `{}` when the
+    sidecar is missing or carries no meta."""
+    sc = sidecar_path(path)
+    if not sc.exists():
+        return {}
+    return json.loads(sc.read_text()).get("meta", {}) or {}
+
+
 def read_pack(
     path: str | Path, *, expect_stamp: Optional[str] = None,
 ) -> Tuple[List[Entry], Dict[str, dict], str]:
@@ -111,5 +121,14 @@ def read_pack(
     sc = sidecar_path(path)
     payloads: Dict[str, dict] = {}
     if sc.exists():
-        payloads = json.loads(sc.read_text()).get("payloads", {})
+        doc = json.loads(sc.read_text())
+        # Labels are payload-id lookups: a sidecar from a different build
+        # resolves ids to the wrong coordinates, silently. Refuse it.
+        if doc.get("sig_stamp") != sig_stamp or doc.get("n_entries") != n:
+            raise ValueError(
+                f"{sc.name} does not match {path.name} "
+                f"(stamp {doc.get('sig_stamp')!r}/{sig_stamp!r}, "
+                f"entries {doc.get('n_entries')}/{n}): pack and sidecar are "
+                f"built as a pair and must be installed together")
+        payloads = doc.get("payloads", {})
     return entries, payloads, sig_stamp
