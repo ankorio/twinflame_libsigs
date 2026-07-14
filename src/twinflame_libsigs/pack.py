@@ -111,5 +111,14 @@ def read_pack(
     sc = sidecar_path(path)
     payloads: Dict[str, dict] = {}
     if sc.exists():
-        payloads = json.loads(sc.read_text()).get("payloads", {})
+        doc = json.loads(sc.read_text())
+        # Labels are payload-id lookups: a sidecar from a different build
+        # resolves ids to the wrong coordinates, silently. Refuse it.
+        if doc.get("sig_stamp") != sig_stamp or doc.get("n_entries") != n:
+            raise ValueError(
+                f"{sc.name} does not match {path.name} "
+                f"(stamp {doc.get('sig_stamp')!r}/{sig_stamp!r}, "
+                f"entries {doc.get('n_entries')}/{n}): pack and sidecar are "
+                f"built as a pair and must be installed together")
+        payloads = doc.get("payloads", {})
     return entries, payloads, sig_stamp
