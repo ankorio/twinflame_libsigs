@@ -7,7 +7,8 @@ import pytest
 from twinflame_libsigs.dedup import (
     ClassSig, assign_payload_ids, compact_ranges, dedup_by_signature)
 from twinflame_libsigs.detect import LibraryDetector
-from twinflame_libsigs.pack import read_meta, read_pack, sidecar_path, write_pack
+from twinflame_libsigs.pack import (
+    describe_pack, read_meta, read_pack, sidecar_path, utc_now_iso, write_pack)
 from twinflame_libsigs.store import StaleStoreError
 
 OKHTTP = "com.squareup.okhttp3:okhttp"
@@ -116,6 +117,46 @@ def test_read_meta_roundtrip_and_missing_sidecar(tmp_path):
     assert read_meta(path) == {"coords": [OKHTTP]}
     sidecar_path(path).unlink()
     assert read_meta(path) == {}
+
+
+def test_describe_pack_reads_sidecar_only(tmp_path):
+    sigs = [
+        ClassSig(OKHTTP, "3.12.0", _sig(1), fqcn="okhttp3.Request",
+                 strings=("http/1.1",), instructions=90),
+        ClassSig(OKHTTP, "4.12.0", _sig(2), fqcn="okhttp3.Cache", instructions=40),
+    ]
+    stream, sidecar = assign_payload_ids(dedup_by_signature(sigs), {OKHTTP: ORDER})
+    path = tmp_path / "lib.tflp"
+    built = utc_now_iso()
+    assert built.endswith("Z") and "." not in built    # seconds precision
+    write_pack(path, stream, sidecar, sig_stamp="stamp-a",
+               meta={"coords": [OKHTTP], "versions": 2, "classes_seen": 2,
+                     "classes_below_min_instr": 0, "min_instr": 20,
+                     "built": built})
+    d = describe_pack(path)
+    assert d["path"] == str(path.resolve())
+    assert d["sidecar"] == str(sidecar_path(path).resolve())
+    assert d["n_entries"] == 2
+    assert d["coords"] == 1 and d["versions"] == 2
+    assert d["classes_seen"] == 2 and d["min_instr"] == 20
+    assert d["built"] == built and d["built_from"] == "meta"
+    assert d["size_bytes"] == path.stat().st_size + sidecar_path(path).stat().st_size
+
+    # Describing must not depend on the pack body: corrupt it and ask again.
+    path.write_bytes(b"not a pack")
+    assert describe_pack(path)["n_entries"] == 2
+
+
+def test_describe_pack_falls_back_to_mtime(tmp_path):
+    path, _, _ = _pack_fixture(tmp_path)           # meta without `built`
+    d = describe_pack(path)
+    assert d["built_from"] == "mtime"
+    assert d["built"].endswith("Z") and len(d["built"]) == len("2026-01-01T00:00:00Z")
+    assert d["coords"] == 1 and d["versions"] is None   # count missing -> None
+
+    sidecar_path(path).unlink()
+    with pytest.raises(FileNotFoundError):
+        describe_pack(path)
 
 
 def test_pack_rejects_mismatched_sidecar(tmp_path):
