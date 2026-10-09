@@ -41,6 +41,14 @@ maturin develop --release --features python     # into the active venv
 python -c "import tfls_mih; s=tfls_mih.MihStore.build([(1,0),(2,1)], 6); print(s.query(1, 12))"
 ```
 
+## Release (wheel)
+
+`.github/workflows/native-wheels.yml` builds manylinux x86_64 wheels for
+CPython 3.11-3.13 with maturin-action and publishes them to PyPI as `tfls-mih`
+(Trusted Publishing) when a `native-v<version>` tag is pushed; the tag must
+match `[project].version` in `pyproject.toml`. `workflow_dispatch` runs the
+build only (wheels as a job artifact).
+
 ## API (Python)
 
 ```python

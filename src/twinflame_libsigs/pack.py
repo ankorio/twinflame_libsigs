@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import json
 import struct
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
 
@@ -72,6 +73,69 @@ def write_pack(
     doc = {"format": PACK_FORMAT, "sig_stamp": sig_stamp,
            "n_entries": len(entries), "meta": meta or {}, "payloads": sidecar}
     sidecar_path(path).write_text(json.dumps(doc))
+
+
+def utc_now_iso() -> str:
+    """Current time as ISO 8601 UTC at seconds precision with a "Z" suffix —
+    the format of the `built` meta key written by `twinflame-libsigs build`."""
+    return _iso_utc(datetime.now(timezone.utc))
+
+
+def _iso_utc(dt: datetime) -> str:
+    return dt.astimezone(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def describe_pack(path: str | Path) -> dict:
+    """A cheap summary of a pack from its sidecar JSON only — the pack itself is
+    never read, so this is safe to call on the 50k-entry library pack at every
+    `hello`. Keys:
+
+        path, sidecar        absolute paths as strings
+        n_entries            distinct payloads in the pack
+        coords, versions     counts (coordinates scraped, versions scraped)
+        classes_seen         classes scanned before dedup / min-instr filter
+        min_instr            the build's instruction floor
+        built                ISO 8601 UTC build time
+        built_from           "meta" when the sidecar carries `built`, else
+                             "mtime" (the pack file's modification time —
+                             packs built before the key existed)
+        size_bytes           pack + sidecar on disk
+
+    Counts missing from an older sidecar's meta are `None`. Raises
+    `FileNotFoundError` when the sidecar is missing (nothing to describe)."""
+    path = Path(path)
+    sc = sidecar_path(path)
+    if not sc.exists():
+        raise FileNotFoundError(f"{sc}: pack sidecar not found")
+    doc = json.loads(sc.read_text())
+    meta = doc.get("meta", {}) or {}
+
+    coords = meta.get("coords")
+    n_coords = len(coords) if isinstance(coords, (list, tuple)) else coords
+
+    built = meta.get("built")
+    built_from = "meta"
+    if not built:
+        built_from = "mtime"
+        src = path if path.exists() else sc
+        built = _iso_utc(datetime.fromtimestamp(src.stat().st_mtime, timezone.utc))
+
+    size = sc.stat().st_size
+    if path.exists():
+        size += path.stat().st_size
+
+    return {
+        "path": str(path.resolve()),
+        "sidecar": str(sc.resolve()),
+        "n_entries": doc.get("n_entries"),
+        "coords": n_coords,
+        "versions": meta.get("versions"),
+        "classes_seen": meta.get("classes_seen"),
+        "min_instr": meta.get("min_instr"),
+        "built": built,
+        "built_from": built_from,
+        "size_bytes": size,
+    }
 
 
 def read_meta(path: str | Path) -> dict:

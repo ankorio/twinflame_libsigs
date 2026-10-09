@@ -1,0 +1,96 @@
+name: native-wheels
+
+# Builds and publishes the native MIH accelerator (`native/`, PyPI package
+# `tfls-mih`, module `tfls_mih`) as manylinux wheels. It is a separate PyPI
+# project from `twinflame-libsigs` (release.yml), on its own tag namespace:
+#
+#     git tag native-v0.0.1 && git push origin native-v0.0.1
+#
+# where the version must match [project].version in native/pyproject.toml.
+# twinflame lists it as the optional extra `twinflame[native]`; without the
+# wheel detect.py falls back to the pure-Python brute-force store.
+#
+# `workflow_dispatch` builds the wheels as a downloadable artifact without
+# publishing (smoke test of the matrix). Publishing uses PyPI Trusted
+# Publishing (OIDC): the `tfls-mih` project on PyPI must list this repository
+# and workflow file name as a trusted publisher — no stored token.
+#
+# NOTE: this file must be pushed by the repository owner; the CI token used by
+# automation lacks the `workflow` scope needed to add or change workflow files.
+on:
+  push:
+    tags: ["native-v*"]
+  workflow_dispatch:
+
+jobs:
+  wheels:
+    name: manylinux x86_64 wheels
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check tag matches native/pyproject.toml version
+        if: startsWith(github.ref, 'refs/tags/native-v')
+        run: |
+          V=$(python -c "import tomllib; print(tomllib.load(open('native/pyproject.toml','rb'))['project']['version'])")
+          T="${GITHUB_REF_NAME#native-v}"
+          if [ "$V" != "$T" ]; then
+            echo "::error::tag native-v$T does not match native/pyproject.toml version $V"
+            exit 1
+          fi
+
+      - name: Build wheels (CPython 3.11-3.13, manylinux)
+        uses: PyO3/maturin-action@v1
+        with:
+          working-directory: native
+          target: x86_64
+          manylinux: auto
+          args: --release --out dist --interpreter python3.11 python3.12 python3.13
+
+      - name: Build sdist
+        uses: PyO3/maturin-action@v1
+        with:
+          working-directory: native
+          command: sdist
+          args: --out dist
+
+      - name: Smoke-test the wheel
+        run: |
+          python -m pip install --no-index --find-links native/dist tfls-mih
+          python -c "import tfls_mih; s=tfls_mih.MihStore.build([(1,0),(2,1)], 2); print(s.query(1, 12))"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tfls-mih-dist
+          path: native/dist/*
+
+  publish:
+    name: Publish to PyPI
+    needs: wheels
+    if: startsWith(github.ref, 'refs/tags/native-v')
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write   # PyPI Trusted Publishing (OIDC) — no stored token
+      contents: write   # create the GitHub Release with the wheels attached
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: tfls-mih-dist
+          path: dist
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist
+
+      - name: GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" \
+            --title "$GITHUB_REF_NAME" --generate-notes
