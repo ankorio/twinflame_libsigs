@@ -44,7 +44,7 @@ def _cmd_build(args) -> int:
     from twinflame.prepare import SIGNATURE_STAMP
 
     from .dedup import ClassSig, assign_payload_ids, dedup_by_signature
-    from .pack import write_pack
+    from .pack import utc_now_iso, write_pack
     from .scraper import iter_cached_sigs, ver_key
 
     cache = Path(args.cache)
@@ -80,6 +80,10 @@ def _cmd_build(args) -> int:
         "classes_seen": n_classes,
         "classes_below_min_instr": n_skipped,
         "min_instr": args.min_instr,
+        # Build time, ISO 8601 UTC at seconds precision ("Z" suffix). Consumers
+        # (`pack.describe_pack`, twinflame's `hello`) fall back to the pack
+        # file's mtime for packs built before this key existed.
+        "built": utc_now_iso(),
     }
     write_pack(args.output, stream, sidecar, sig_stamp=SIGNATURE_STAMP, meta=meta)
     kept = n_classes - n_skipped
