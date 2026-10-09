@@ -27,7 +27,10 @@ Beta. The core pipeline is complete end-to-end — **catalogue → `scrape` →
   and exact (vs ≥90% recall). pyo3 module `tfls_mih` lets twinflame call it
   directly. **Optional**: `detect.py` falls back to a pure-Python brute-force
   store when the native module isn't built, so the pipeline works without it —
-  the native wheel is a performance accelerator, not a requirement.
+  the native wheel is a performance accelerator, not a requirement. Published
+  to PyPI as `tfls-mih` by `.github/workflows/native-wheels.yml` (manylinux
+  x86_64, CPython 3.11-3.13) on `native-v*` tags; twinflame exposes it as the
+  optional extra `pip install "twinflame[native]"`.
 - **The Python prototype** (`store.py` / `build.py`, the `.tfls` format): the
   original approximate LSH-banding store + on-disk prefix-directory study. Kept
   as design reference; superseded by the `.tflp` pack + native store above.
